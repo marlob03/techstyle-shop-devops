@@ -1,0 +1,44 @@
+# TechStyle .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+env/
+venv/
+.venv/
+
+# Flask
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets / credentials — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.bak
+*.tmp
+*.log
