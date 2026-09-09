@@ -71,6 +71,27 @@ when integrating multiple already-reviewed branches.**
   - **Testing** — how it was tested, manual steps if relevant
   - **Checklist** — tests added/updated, docs updated, no secrets committed,
     `.env.example` updated if new config was added
+- **CODEOWNERS** (`.github/CODEOWNERS`): defines who reviews which paths;
+  `@marlob03` currently owns everything, with `app.py`, `.github/workflows/`
+  and `deploy.sh` called out explicitly as the payments/auth/infra paths from
+  the rule above.
+
+### Enforced ruleset (GitHub branch protection on `main`)
+
+What's actually configured on GitHub, not just documented here:
+
+- **Required status checks:** `Code Quality (flake8)` and
+  `Automated Tests (pytest)` must pass; `strict: true` means the PR branch
+  must be up to date with `main` before merging.
+- **`enforce_admins: false`:** the repo owner *can* merge past a red or
+  pending check in an emergency (e.g. a hotfix where CI itself is broken),
+  but doing so is a deliberate override, not the default path — GitHub
+  visibly flags such a merge as bypassing the required checks.
+- **No required PR-review count enforced yet:** the team is currently a
+  single person, so requiring approvals would just lock out the only
+  contributor. Revisit once a second reviewer joins (see CODEOWNERS above for
+  who that should be).
+- **Force-push and branch deletion on `main`:** disabled.
 
 ## e) Release & Tagging Process
 
