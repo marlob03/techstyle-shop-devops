@@ -13,3 +13,8 @@ SQLAlchemy
 gunicorn
 python-dotenv
 requests
+
+# Test & lint dependencies
+pytest
+pytest-mock==3.15.0
+flake8
