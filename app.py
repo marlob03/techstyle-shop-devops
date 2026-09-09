@@ -88,6 +88,17 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Reviews MVP 1 (docs/mvp/02-mvp-definition-reviews.md): star rating +
+    # optional comment, no purchase/moderation gate yet.
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     db.commit()
 
 
@@ -142,7 +153,44 @@ def product_detail(product_id):
     if not product:
         flash("Product not found.", "danger")
         return redirect(url_for("index"))
-    return render_template("product.html", product=product)
+
+    reviews = query_db(
+        "SELECT * FROM reviews WHERE product_id = ? ORDER BY created_at DESC",
+        (product_id,),
+    )
+    avg_rating = (
+        round(sum(r["rating"] for r in reviews) / len(reviews), 1)
+        if reviews
+        else None
+    )
+    return render_template(
+        "product.html",
+        product=product,
+        reviews=reviews,
+        avg_rating=avg_rating,
+    )
+
+
+@app.route("/product/<int:product_id>/review", methods=["POST"])
+def add_review(product_id):
+    try:
+        rating = int(request.form.get("rating", ""))
+    except ValueError:
+        rating = 0
+
+    if rating < 1 or rating > 5:
+        flash("Please select a rating between 1 and 5 stars.", "danger")
+        return redirect(url_for("product_detail", product_id=product_id))
+
+    comment = request.form.get("comment", "").strip()[:500]
+    db = get_db()
+    db.execute(
+        "INSERT INTO reviews (product_id, rating, comment) VALUES (?, ?, ?)",
+        (product_id, rating, comment),
+    )
+    db.commit()
+    flash("Thanks for your review!", "success")
+    return redirect(url_for("product_detail", product_id=product_id))
 
 
 # ─────────────────────────────────────────────

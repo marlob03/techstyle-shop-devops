@@ -1,0 +1,12 @@
+# CODEOWNERS — TechStyle
+# Requires review from the listed owner(s) before a PR touching these paths
+# can be merged (enforced together with the branch protection ruleset, see
+# docs/PIPELINE.md and CONTRIBUTING.md section d).
+
+# Default: repo owner reviews everything
+* @marlob03
+
+# Payments, auth and infra changes need extra scrutiny (CONTRIBUTING.md: 2 reviews)
+/app.py @marlob03
+/.github/workflows/ @marlob03
+/deploy.sh @marlob03
