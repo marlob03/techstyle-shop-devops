@@ -1,0 +1,15 @@
+# TechStyle dependencies
+# Note: versions are intentionally unpinned — install whatever pip finds.
+# This will bite us eventually. (Day 04 TODO: pin versions and add pip-audit)
+
+Flask
+Flask-SQLAlchemy
+Jinja2
+Werkzeug
+click
+itsdangerous
+MarkupSafe
+SQLAlchemy
+gunicorn
+python-dotenv
+requests
