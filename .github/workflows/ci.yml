@@ -41,3 +41,62 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run tests
         run: pytest tests/ -v --tb=short
+
+  sonarqube:
+    name: SonarQube Analysis
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarQube Scan
+        continue-on-error: true # SonarQube-Server ist optional (z.B. Terraform-VM nicht hochgefahren) — soll die Pipeline nicht rot machen
+        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      - name: SonarQube Quality Gate
+        continue-on-error: true # siehe oben — nicht blockierend
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1.2.1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: SonarQube Issues Summary
+        if: always()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          PROJECT_KEY=$(grep '^sonar.projectKey=' sonar-project.properties | cut -d'=' -f2)
+          ISSUES_URL="${SONAR_HOST_URL}/api/issues/search?componentKeys=${PROJECT_KEY}&resolved=false&ps=500"
+
+          if ! RESPONSE=$(curl -sf -u "${SONAR_TOKEN}:" "$ISSUES_URL"); then
+            {
+              echo "## SonarQube Issues"
+              echo "Konnte Issues nicht von SonarQube abrufen (${ISSUES_URL})."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          TOTAL=$(echo "$RESPONSE" | jq -r '.total')
+
+          {
+            echo "## SonarQube Issues (${TOTAL} offen)"
+            echo ""
+            echo "[Alle Issues in SonarQube ansehen](${SONAR_HOST_URL}/project/issues?id=${PROJECT_KEY}&resolved=false)"
+            echo ""
+
+            if [ "$TOTAL" = "0" ]; then
+              echo "Keine offenen Issues."
+            else
+              echo "$RESPONSE" | jq -r '.issues | group_by(.severity) | map("- **\(.[0].severity)**: \(length)") | .[]'
+              echo ""
+              echo "| Schweregrad | Typ | Datei:Zeile | Regel | Meldung |"
+              echo "|---|---|---|---|---|"
+              echo "$RESPONSE" | jq -r '.issues[] | "| \(.severity) | \(.type) | \(.component | split(":") | last):\(.line // "-") | \(.rule) | \(.message | gsub("\r?\n"; " ") | gsub("\\|"; "\\|")) |"'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
